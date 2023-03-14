@@ -2,23 +2,24 @@
 # include <string>
 # include <unordered_map>
 # include <list>
+
 static int PAGE_SIZE = 4096;
-
 typedef std::unordered_map<unsigned int, char> page_map;
+typedef std::list<unsigned int> linked_list;
 
-void fifo(const char * filename, int nFrames, std::string mode){
+void FIFO(const char * filename, int nFrames, std::string mode){
     int countR = 0; int countW = 0;
-    page_map table; 
-    std::list<unsigned int> queue;
+    page_map table; linked_list queue;
     unsigned int addr; char rw;
     
     FILE *traceFile;
     traceFile = fopen(filename, "r");
     int traceCount = 0;
-    while (!feof(traceFile)){
-        fscanf(traceFile, "%x %c", &addr, &rw);
+
+    while (!feof(traceFile) && fscanf(traceFile, "%x %c", &addr, &rw)!=EOF){
         addr /= PAGE_SIZE;
         traceCount++;
+
         if (table.find(addr) == table.end()){ // page fault
             countR++;
             if (table.size() == nFrames){
@@ -39,15 +40,35 @@ void fifo(const char * filename, int nFrames, std::string mode){
     "\nRead Count: " << countR << "\nWrite Count: " << countW << std::endl;
 }
 
-void lru(){
-
-}
-
 void segmentedFifo(){
 
 }
 
+void LRU(const char * filename, int nFrames, std::string mode){
+    int rCount = 0; int wCount = 0;
+    page_map table; 
+    linked_list lru;
+    unsigned int addr; char rw;
+
+    FILE * tFile;
+    tFile = fopen(filename, "r");
+
+    while (!feof(tFile)){
+        fscanf(tFile, "%x %c", &addr, &rw);
+        addr /= PAGE_SIZE;
+
+        if (table.find(addr) == table.end()){ // page fault
+
+        }
+        else {
+            
+        }
+
+    }
+
+}
+
 int main(){
-    fifo("bzip.trace", 64, "quiet");
+    FIFO("bzip.trace", 64, "quiet");
     return 0;
 }
