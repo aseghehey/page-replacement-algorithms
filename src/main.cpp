@@ -2,11 +2,12 @@
 # include <string>
 # include <unordered_map>
 # include <list>
+# include <utility>
 
 static int PAGE_SIZE = 4096;
 typedef std::unordered_map<unsigned int, char> page_map;
 typedef std::list<unsigned int> linked_list;
-typedef std::list<unsigned int>::iterator list_pointer;
+typedef std::list<unsigned int>::iterator frame_pointer;
 
 void FIFO(const char * filename, int nFrames, std::string mode){
     int countR = 0; int countW = 0;
@@ -49,10 +50,8 @@ void segmentedFifo(){
 
 void LRU(const char * filename, int numFrames, std::string mode){
     int rCount = 0; int wCount = 0; int traceCount = 0;
-
-    page_map table; 
-    linked_list queue;
-    std::unordered_map<unsigned int, list_pointer> referenceHash;
+    linked_list pageFrame; page_map table;
+    std::unordered_map<unsigned int, frame_pointer> frameRef;
 
     unsigned int addr; char rw;
     FILE * tFile;
@@ -60,32 +59,33 @@ void LRU(const char * filename, int numFrames, std::string mode){
 
     while (!feof(tFile) && fscanf(tFile, "%x %c", &addr, &rw)!=EOF){
         traceCount++;
-        if (table.find(addr) == table.end()){ // page fault
+        addr /= PAGE_SIZE;
+        if (table.find(addr) == table.end()){
             rCount++;
-            if (table.size() == numFrames){ // at capacity
-                unsigned int leastRecentlyUsed = queue.back();
-                if (table[leastRecentlyUsed] == 'W') wCount++; // dirty page
-                queue.pop_back();
-                table.erase(leastRecentlyUsed); referenceHash.erase(leastRecentlyUsed);
+            if (table.size() == numFrames){
+                unsigned int lru = pageFrame.back();
+                if (table[lru] == 'W') wCount++;
+                pageFrame.pop_back(); table.erase(lru); frameRef.erase(lru);
             }
             table[addr] = rw;
         }
-        else{
-            queue.erase(referenceHash[addr]);
+        else {
+            if (table[addr]== 'R') table[addr] = rw;
+            pageFrame.erase(frameRef[addr]);
         }
-
-        queue.push_front(addr);
-        referenceHash[addr] = queue.begin();
+        pageFrame.push_front(addr);
+        frameRef[addr] = pageFrame.begin();
     }
+
     fclose(tFile);
     if (mode == "quiet"){
-        std::cout <<"Memory Frames: " << queue.size() << "\nTrace Count: " << traceCount << 
+        std::cout <<"Memory Frames: " << numFrames << "\nTrace Count: " << traceCount << 
         "\nRead Count: " << rCount << "\nWrite Count: " << wCount << std::endl;
     }
 }
 
 int main(){
     // FIFO("bzip.trace", 64, "quiet");
-    LRU("bzip.trace", 64, "quiet");
+    LRU("bzip.trace", 14, "quiet");
     return 0;
 }
