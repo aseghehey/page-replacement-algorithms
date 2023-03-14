@@ -45,7 +45,6 @@ FILE* openFile(const char * filename){
     return file;
 }
 
-
 void FIFO(const char * filename, int nFrames, std::string mode){
     int countR = 0; int countW = 0; int traceCount = 0;
     page_map table; linked_list queue;
@@ -110,11 +109,21 @@ void VMS(const char * filename, int numFrames, int p, std::string mode){
     unsigned int addr; char rw;
     FILE* tFile = openFile(filename);
 
+    // edge cases
+    if (len1 == 0) {
+        FIFO(filename, numFrames, mode); 
+        return;
+    }
+    if (len2 == 0){
+        LRU(filename, numFrames, mode); 
+        return;
+    }
+
     while (!feof(tFile) && fscanf(tFile, "%x %c", &addr, &rw)!=EOF){
         traceCount++;
         addr /= PAGE_SIZE;
 
-        if (!hit(addr, rw, table, rCount)){ // miss #1
+        if (!hit(addr, rw, table, rCount)){ 
             if (fifo.size() == len1){
                 unsigned int frame_addr = fifo.front();
                 char rw_ = table[frame_addr];
@@ -135,20 +144,16 @@ void VMS(const char * filename, int numFrames, int p, std::string mode){
         }
         else {
             if (refLRU.find(addr) != refLRU.end()){
-                unsigned int frame_addr = lru.back();
-                char rw_ = table[frame_addr];
-                if (fifo.size() < len1){
-                    pop_lru(table, lru, refLRU, frame_addr);
-                }
-                else { // full
+                if (fifo.size() == len1){
                     if (lru.size() < len2){
                         unsigned int fifo_frame_addr = fifo.front(); 
-                        char fifo_frame_rw = table[fifo_frame_addr];
+                        char fifo_frame_rw = table[fifo_frame_addr]; 
+                        pop_lru(table, lru, refLRU, addr);
                         pop_fifo(fifo, table, fifo_frame_addr);
                         push_lru(lru, fifo_frame_rw, table, refLRU, fifo_frame_addr);
                     }
                 }
-                push_fifo(frame_addr, rw_, table, fifo);
+                push_fifo(addr, rw, table, fifo);
             }
         }
 
@@ -166,6 +171,6 @@ int main(){
     std::cout << std::endl;
     LRU("bzip.trace", 64, "quiet");
     std::cout << std::endl;
-    VMS("bzip.trace", 64, 50, "quiet");
+    VMS("bzip.trace", 64, 0, "quiet");
     return 0;
 }
