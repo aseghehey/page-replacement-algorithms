@@ -1,0 +1,4 @@
+.vscode/
+src/main.dSYM/Contents
+src/main
+.DS_Store
