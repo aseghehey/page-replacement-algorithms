@@ -8,15 +8,15 @@ typedef std::list<unsigned int> LinkedList;
 typedef std::list<unsigned int>::iterator FramePointer;
 typedef std::unordered_map<unsigned int, FramePointer> IterMap;
 
-void PushFifo(unsigned int& address, char& r_w, PageMap& pTable, LinkedList& list){
+void PushFifo(unsigned int address, char r_w, PageMap& pTable, LinkedList& list){
     list.push_back(address);
     pTable[address] = r_w;
 }
-void PopFifo(LinkedList& list, PageMap& pTable,unsigned int& frameToDelete){
+void PopFifo(LinkedList& list, PageMap& pTable, unsigned int frameToDelete){
     list.pop_front(); 
     pTable.erase(frameToDelete);
 }
-bool Hit(unsigned int& address, char& r_w, PageMap& pTable, int& read){
+bool Hit(unsigned int address, char& r_w, PageMap& pTable, int& read){
     if (pTable.find(address) == pTable.end()){
         read++;
         return false;
@@ -24,19 +24,19 @@ bool Hit(unsigned int& address, char& r_w, PageMap& pTable, int& read){
     if (pTable[address]=='R') pTable[address] = r_w; // update
     return true;
 }
-void UpdateLRU(LinkedList& pFrame, IterMap& refFrame, unsigned int& address){
+void UpdateLRU(LinkedList& pFrame, IterMap& refFrame, unsigned int address){
     pFrame.push_front(address);
     refFrame[address] = pFrame.begin();
 }
-void PushLRU(LinkedList& pFrame, char& r_w, PageMap& pTable, IterMap& refFrame, unsigned int address){
+void PushLRU(LinkedList& pFrame, char r_w, PageMap& pTable, IterMap& refFrame, unsigned int address){
     pTable[address] = r_w;
     pFrame.push_front(address);
     refFrame[address] = pFrame.begin();
 }
 void PopLRU(PageMap& pTable, LinkedList& pFrame, IterMap& refFrame, unsigned int frameToDelete){
-    pFrame.pop_back(); 
     pTable.erase(frameToDelete); 
     refFrame.erase(frameToDelete);
+    pFrame.pop_back(); 
 }
 FILE* OpenFile(const char * filename){
     FILE* file;
@@ -110,14 +110,14 @@ void SegmentedFifo(const char* filename, int numFrames, int p, std::string mode)
     unsigned int addr; char rw;
 
     if (lengthLRU == 0){
-        LeastRecentlyUsed(filename, numFrames, mode);
-        return;
-    }
-    if (lengthFifo == 0){
         Fifo(filename, numFrames, mode);
         return;
     }
-
+    if (lengthFifo == 0){
+        LeastRecentlyUsed(filename, numFrames, mode);
+        return;
+    }
+    
     while(!feof(tFile) && fscanf(tFile, "%x %c", &addr, &rw)!=EOF){
         traceCount++;
         addr /= PAGE_SIZE;
@@ -128,7 +128,10 @@ void SegmentedFifo(const char* filename, int numFrames, int p, std::string mode)
                 if (lruTable[addr] == 'R') lruTable[addr] = rw;
                 rw = lruTable[addr];
                 // Delete page from LRU
-                PopLRU(lruTable, lru, referenceLRU, lru.back());
+                // PopLRU(lruTable, lru, referenceLRU, addr);
+                lru.erase(referenceLRU[addr]);
+                lruTable.erase(addr);
+                referenceLRU.erase(addr);
                 // Get what goes in the lru from Fifo
                 unsigned int oldestFifoPage = fifo.front(); 
                 char oldestFifoPageRW = fifoTable[oldestFifoPage];
@@ -144,21 +147,20 @@ void SegmentedFifo(const char* filename, int numFrames, int p, std::string mode)
                     // delete oldest page in fifo, and place it in lru
                     unsigned int oldestFifoPage = fifo.front(); 
                     char oldestFifoPageRW = fifoTable[oldestFifoPage];
-                    // Pop oldest page
-                    PopFifo(fifo, fifoTable, oldestFifoPage);
+                    
                     // Check if LRU is full
                     if (lru.size() == lengthLRU){
                         unsigned int toDel = lru.back();
                         char _cur_rw = lruTable[toDel]; 
-                        if (_cur_rw == 'W') {
-                            wCount++;
-                        }
+                        if (_cur_rw == 'W') wCount++;
                         PopLRU(lruTable, lru, referenceLRU, toDel);
                     }
                     PushLRU(lru, oldestFifoPageRW, lruTable, referenceLRU, oldestFifoPage);
+                    // Pop oldest page
+                    PopFifo(fifo, fifoTable, oldestFifoPage);
                 }
-                rCount++;
                 PushFifo(addr, rw, fifoTable, fifo);
+                rCount++;
             }
         }
         else { // Case 1: Page is in FIFO cache/page table
@@ -174,11 +176,11 @@ void SegmentedFifo(const char* filename, int numFrames, int p, std::string mode)
 }
 
 int main(){
-
+    
     Fifo("bzip.trace", 64, "quiet");
     std::cout << std::endl;
     LeastRecentlyUsed("bzip.trace", 64, "quiet");
     std::cout << std::endl;
-    SegmentedFifo("bzip.trace", 64, 50, "quiet"); // 1290, 427
+    SegmentedFifo("bzip.trace", 64, 40, "quiet"); // 1290, 427
     return 0;
 }
