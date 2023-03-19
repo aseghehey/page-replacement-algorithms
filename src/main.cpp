@@ -1,12 +1,15 @@
 # include <iostream>
-# include <string>
-# include <unordered_map>
-# include <list>
-static int PAGE_SIZE = 4096;
-typedef std::unordered_map<unsigned int, char> PageMap;
-typedef std::list<unsigned int> LinkedList;
-typedef std::list<unsigned int>::iterator FramePointer;
-typedef std::unordered_map<unsigned int, FramePointer> IterMap;
+# include "datastructures.hpp"
+# include "functions.hpp"
+# include "policies.hpp"
+
+void PushFifo(unsigned int address, char r_w, PageMap& pTable, LinkedList& list);
+void PopFifo(LinkedList& list, PageMap& pTable, unsigned int frameToDelete);
+bool Hit(unsigned int address, char& r_w, PageMap& pTable, int& read);
+void UpdateLRU(LinkedList& pFrame, IterMap& refFrame, unsigned int address);
+void PushLRU(LinkedList& pFrame, char r_w, PageMap& pTable, IterMap& refFrame, unsigned int address);
+void PopLRU(PageMap& pTable, LinkedList& pFrame, IterMap& refFrame, unsigned int frameToDelete);
+FILE* OpenFile(const char * filename);
 
 void PushFifo(unsigned int address, char r_w, PageMap& pTable, LinkedList& list){
     list.push_back(address);
@@ -175,12 +178,10 @@ void SegmentedFifo(const char* filename, int numFrames, int p, std::string mode)
 
 }
 
+// testing
+/*
 int main(){
-    
-    Fifo("bzip.trace", 64, "quiet");
-    std::cout << std::endl;
-    LeastRecentlyUsed("bzip.trace", 64, "quiet");
-    std::cout << std::endl;
-    SegmentedFifo("bzip.trace", 64, 40, "quiet"); // 1290, 427
+    Fifo("traces/bzip.trace", 64, "quiet");
     return 0;
 }
+*/
