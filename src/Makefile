@@ -1,4 +1,4 @@
 memsim: 
-	g++ -o memsim fifo.cpp lru.cpp vms.cpp functions.cpp memsim.cpp
+	g++ -o memsim *.cpp
 clean:
 	rm memsim
