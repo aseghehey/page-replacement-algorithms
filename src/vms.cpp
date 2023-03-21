@@ -6,10 +6,12 @@ void SegmentedFifo(const char* filename, int numFrames, int p, std::string mode)
     LinkedList fifo; LinkedList lru;
     IterMap referenceLRU;
     PageMap fifoTable; PageMap lruTable;
+    // calculating lengths based on desired percentage
     int lengthLRU = (numFrames * p) / 100; int lengthFifo = numFrames - lengthLRU;
     FILE* tFile = OpenFile(filename);
     unsigned int addr; char rw;
 
+    // handling edge cases
     if (lengthLRU == 0){
         Fifo(filename, numFrames, mode);
         return;

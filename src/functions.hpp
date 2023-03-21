@@ -3,7 +3,10 @@
 
 #ifndef __FUNCTIONS_H__
 #define __FUNCTIONS_H__
-static int PAGE_SIZE = 4096;
+
+/* Function declaration to make it easier for the policies to refer to*/
+
+static int PAGE_SIZE = 4096; // global constant that will be used to divide the addresses by
 void PushFifo(unsigned int address, char r_w, PageMap& pTable, LinkedList& list);
 void PopFifo(LinkedList& list, PageMap& pTable, unsigned int frameToDelete);
 bool Hit(unsigned int address, char& r_w, PageMap& pTable, int& read);
